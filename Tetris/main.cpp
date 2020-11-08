@@ -196,15 +196,21 @@ int main()
 
     ///////check lines//////////
 
-    // pas encore clair.
+// un code subtile qui detecte quand une ligne est complète.
+// dans ce cas, count==N et k qui correspond à la ligne du dessus
+// n'est pas decrementé. Il en result un changement sequentiel de
+// tout les lignes les unes aprés les autres (avec disparition de la première)
+// la deuxième ligne prenant la valeur de la ligne en dessous et ainsi de suite.
+
+
     int k=M-1;
-    for (int i=M-1;i>0;i--)
+    for (int i=M-1;i>0;i--) // on part du bas!! c'est le point contre-intuitif
     {
         int count=0;
         for (int j=0;j<N;j++)
         {
-            if (field[i][j]) count++;
-            field[k][j]=field[i][j];
+            if (field[i][j]) count++; // si if n'est pas égal à zero!!
+            field[k][j]=field[i][j]; 
         }
         if (count<N) k--;
     }
@@ -228,7 +234,7 @@ int main()
 
          s.setTextureRect(IntRect(field[i][j]*18,0,18,18));// charge la bonne texture (le carré de bonne couleur)
          s.setPosition(j*18,i*18); // les carrés faisant 18 pixels de large, ce sera toujous un multiple de 18
-         s.move(28,31); //offset probablement lié au background qui mange de l'espace à gauche.
+         s.move(28,31); //offset probablement lié au background qui mange de l'espace à gauche (pour prendre en compte le cadre doré)
          window.draw(s);
        }
 
@@ -241,7 +247,14 @@ int main()
         window.draw(s);
       }
 
-    window.draw(frame); // pas clair
+    // il restait un dernier mystère à elucider : pourquoi la première forme ne contient qu'un carré.
+    // la réponse: elle est initialisé à A (0,0) pour les 4 cases mais dans la boucle, un 1 apparaît pour les 
+    // quatres mêmes cases car le y est initialisé à chaque descente, d'où le 0,1 puis 0,2 pui 0,3
+    // ce qui correspond bien à un carré seul qui descend.
+
+
+    window.draw(frame); // les carrés en bas ne sont pas parfaitement alligné avec la frame
+    // on redescine la frame aprés les carrés pour que ce soit un peu plus esthetique.
     window.display();
     }
 
