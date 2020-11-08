@@ -15,11 +15,15 @@ const int N = 10; // semble être les colonnes
 // je dirais qu'il s'agit d'un tableau bidimensionnel d'entier initialisé à zero.
 int field[M][N] = {0};
 
-// pas encore clair à quoi ca correspond
+// Le programme fonctionne avec deux structures contenant 4 carrés (avec une forme différente).
+// on se sert régulièrement de b pour stocker a avant modif de a. chaque carré contient bien sûr 
+// une coordonné X et Y
 struct Point
 {int x,y;} a[4], b[4];
 
-// tableau bidimensionnel 7*4: pas clair pourquoi ca correspond à tel ou tel forme.
+// tableau bidimensionnel 7*4: avec une gestion fine du modulo et de la division, on récrée les 
+// coordonnées correspondant à la bonne forme.
+
 int figures[7][4] =
 {
     1,3,5,7, // I
@@ -32,21 +36,26 @@ int figures[7][4] =
 };
 
 
-// pas encore claire
+// Fonction de vérification de que l'on ne depasse à droite ou gauche 
+// et surtout quand on atteint le bas qui correpond soit à M=20
+// soit à l'empilement des cases qui empechent d'aller plus bas.
+
 bool check()
 {
-
-    // regarde si on depasse à gauche ou droite et renvoie zero (empeche l'action)
-    // deuxième ligne avec field : je pige pas encore.
-    // sinon renvoi A (autorise le mouvement).
    for (int i=0;i<4;i++)
+
+// gauche, droite ou tout en bas: empeche de depasser.
       if (a[i].x<0 || a[i].x>=N || a[i].y>=M) return 0;
+
+// ligne fine qui signifie si atteint l'empilement, empeche de continuer.
+// la subtilité réside dans le fait que le if fonctionne si différent de zero et non pas égal à 1; 
+// autrement dit, la condition est vrai et renvoie zero si l'intérieur du if est égal  à 2,3  etc...
       else if (field[a[i].y][a[i].x]) return 0;
 
    return 1;
 };
 
-
+// boucle principale
 int main()
 {
 
@@ -63,7 +72,7 @@ int main()
     Texture t1,t2,t3;
     t1.loadFromFile("images/tiles.png");
     t2.loadFromFile("images/background.png");
-    t3.loadFromFile("images/frame.png");
+    t3.loadFromFile("images/frame.png"); // celle je ne pige pas encore son intérêt.
 
 
     // transformation en sprite (pas exactement clair mais colle avec tutorial)
@@ -83,9 +92,12 @@ int main()
     while (window.isOpen())
     {
 
-        // a chaque iteration, récupère le temps passé en seconde et incremente le timer?
+        // a chaque iteration, récupère le temps passé en seconde et incremente le timer.
         float time = clock.getElapsedTime().asSeconds();
-        clock.restart();
+        clock.restart();// on remet à zero le compteur. la ligne du dessus pourraît être inutile car 
+        //clock.restart renvoie le temp ecoulé.
+
+        // on incrémente pour détecter quand on dépasse 0.3 seconde.
         timer+=time;
 
         // ne pas appeler l'objet event car nom reservé en c++
@@ -107,6 +119,9 @@ int main()
 
 
      // augmente la vitesse de descente de l'objet j'imagine.
+    // pas clair pourquoi on ne le met pas dans les events.
+    // a noter que cela n'est valable que tant que le doigt reste appuyer sur la touche.
+
     if (Keyboard::isKeyPressed(Keyboard::Down)) delay=0.05;
 
     //// <- Move -> ///
@@ -119,16 +134,15 @@ int main()
     // execute la fonction check, regarder si elle vaut 0 ou 1: signifie que le deplacement est interdit ou doit
     // s'arrêter( quand check est égale à zero, le mouvement s'arrête ou n'est pas autorisé??)
 
-
     // si check renvoie zero, on refuse le mouvement et réinitiliase à l'ancienne position a, c'est à dire b.
     if (!check()) for (int i=0;i<4;i++) a[i]=b[i];
 
     //////Rotate//////
+    // je n'ai pas regardé en détail comment est pensé la rotation, je suis sûr que les equations sont correctes.
+    // toujours l'appel à la fonction check si on dépasse.
+
     if (rotate)
       {
-
-        // ce centre de rotation fait qu'au pire, une case peut se retrouver plus haut de 1 or on voit que l'on demarre une case en dessous de la grille
-        // pour gérer ce cas de figure.
         Point p = a[1]; //center of rotation
         for (int i=0;i<4;i++)
           {
@@ -149,25 +163,33 @@ int main()
         // on descend d'une ligne (le + car par du zero en haut à gauche?)
         for (int i=0;i<4;i++) { b[i]=a[i]; a[i].y+=1; }
 
-        // si est arrivé en bas, check est sans doute égal à zero.
+        // si on atteint le haut de l'empilement. C'est une subtilité car 
+        // les autres cas possibles de check ont déja été traités. il ne reste donc 
+        // que le cas de l'arrivé sur l'empilement.
+
+        // si on arrive sur l'empilement on va écrire dans le tableau bidimensionnel
+        // la couleur de la case pour la garder en mémoire et pouvoir recreéer le tableau. 
         if (!check())
         {
          for (int i=0;i<4;i++) field[b[i].y][b[i].x]=colorNum;
 
+         // on choisit une nouvelle couleur aleatoire pour la nouvelle forme comprise entre 1 et 7 
+         // le zero est reservé pour les cases vides.
+
          colorNum=1+rand()%7;
 
          // choisis aléatoirement la nouvelle figure.
-         int n=rand()%7;
+         int n=rand()%7; // entre 0 et 7
          for (int i=0;i<4;i++)
 
-             // pas clair
+             // subilité du code avec le modulo et la division pour générer la bonne forme.
            {
             a[i].x = figures[n][i] % 2;
             a[i].y = figures[n][i] / 2;
            }
         }
 
-
+        // comme on a atteint le sommet de l'empilement et généré une nouvellrme forme,
         // on reinitialise le timer à zero.
          timer=0;
       }
@@ -194,21 +216,23 @@ int main()
     window.draw(background);
      
 
-// parcourt tout les cases de la grille pour remplir avec les bons objets.
+// parcourt tout les cases de la grille pour remplir les empilements devenus statiques.
     for (int i=0;i<M;i++)
      for (int j=0;j<N;j++)
        {
 
          // s est le sprite pour Square j'imagine.
-         if (field[i][j]==0) continue;
-         s.setTextureRect(IntRect(field[i][j]*18,0,18,18));// récupère un seul carré de l'image? 
-         s.setPosition(j*18,i*18);
-         s.move(28,31); //offset
+         if (field[i][j]==0) continue; // si zero ne fait rien et passe à l'iteration suivante
+         // field[i][j] contient le numero de la couleur (de 1 à 7) ce qui permet également 
+         // d'aller chercher le bon x dans le sprite contenant tout les carrés sur une ligne.
+
+         s.setTextureRect(IntRect(field[i][j]*18,0,18,18));// charge la bonne texture (le carré de bonne couleur)
+         s.setPosition(j*18,i*18); // les carrés faisant 18 pixels de large, ce sera toujous un multiple de 18
+         s.move(28,31); //offset probablement lié au background qui mange de l'espace à gauche.
          window.draw(s);
        }
 
-
-    // pas encore clair
+// pour afficher la forme en cour de descente
     for (int i=0;i<4;i++)
       {
         s.setTextureRect(IntRect(colorNum*18,0,18,18));
